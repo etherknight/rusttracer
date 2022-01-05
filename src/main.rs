@@ -1,7 +1,10 @@
+pub mod vec3;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-//use std::fmt;
+
+use vec3::Vec3;
 
 fn main() {
     let image_height = 256;
@@ -14,8 +17,6 @@ fn main() {
         Ok(file) => file,
     };
 
-
-
     file.write("P3\n".as_bytes())
         .expect("Failed to write PPM header");
 
@@ -24,17 +25,21 @@ fn main() {
 
     for j in 0..image_height {
         for i in 0..image_width {
-
-            let r: f64 = i as f64 / ((image_width - 1) as f64);
-            let g: f64 = j as f64 / ((image_height - 1) as f64);
-            let b: f64 = 0.25;
-
-            let ir = (255.999 * r) as i32;
-            let ig = (255.999 * g) as i32;
-            let ib = (255.999 * b) as i32;
-
-            file.write( format!("{} {} {}\n", ir, ig, ib).as_bytes())
-                .expect(format!("Failed to write byte {}x{}", j, i).as_str());
+            let r: f32 = i as f32 / ((image_width - 1) as f32);
+            let g: f32 = j as f32 / ((image_height - 1) as f32);
+            let b: f32 = 0.25;
+            
+            let pixel = Vec3 { x: r, y: g, z: b };
+            write_colour(&mut file, pixel);
         }
     }
+}
+
+fn write_colour(file: &mut File, pixel: Vec3) {
+    let ir = (255.999 * pixel.x) as i32;
+    let ig = (255.999 * pixel.y) as i32;
+    let ib = (255.999 * pixel.z) as i32;
+
+    file.write( format!("{} {} {}\n", ir, ig, ib).as_bytes())
+        .expect(format!("Failed to write pixel").as_str());
 }
