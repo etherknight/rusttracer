@@ -14,8 +14,13 @@ fn main() {
         Ok(file) => file,
     };
 
-    let mut image = String::from("P3\n").to_owned();
-    image.push_str(format!("{} {}\n255\n", image_width, image_height).as_str() );
+
+
+    file.write("P3\n".as_bytes())
+        .expect("Failed to write PPM header");
+
+    file.write(format!("{} {}\n255\n", image_width, image_height).as_bytes())
+        .expect("Failed to initalise image dimensions");
 
     for j in 0..image_height {
         for i in 0..image_width {
@@ -28,12 +33,8 @@ fn main() {
             let ig = (255.999 * g) as i32;
             let ib = (255.999 * b) as i32;
 
-            image.push_str( format!("{} {} {}\n", ir, ig, ib).as_str());
+            file.write( format!("{} {} {}\n", ir, ig, ib).as_bytes())
+                .expect(format!("Failed to write byte {}x{}", j, i).as_str());
         }
     }
-
-    match file.write_all(image.as_bytes()) {
-        Err(reason) => panic!("Couldn't write to {}: {}", image_file_name, reason),
-        Ok(_) => println!("Image written to {}", image_file_name) 
-    };
 }
