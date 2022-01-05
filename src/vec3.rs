@@ -1,13 +1,20 @@
 use std::ops;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32
 }
 
+pub type Colour = Vec3;
+pub type Point = Vec3;
+
 impl Vec3 {
-    
+    pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
+        Vec3 { x, y, z }
+    }
+
     pub fn length(&self) -> f32 {
         self.length_squared()
             .sqrt()
@@ -30,7 +37,7 @@ impl Vec3 {
         let y = self.z * vec.x - self.x * vec.z;
         let z = self.x * vec.y - self.y * vec.x;
 
-        Vec3 { x, y, z }
+        Vec3::new(x, y, z)
     }
 
     pub fn unit_vector(self) -> Vec3 {
@@ -47,7 +54,7 @@ impl ops::Add<Vec3> for Vec3 {
         let y = self.y + _rhs.y;
         let z = self.z + _rhs.z;
 
-        Vec3 { x, y, z }
+        Vec3::new(x, y, z)
     }
 }
 
