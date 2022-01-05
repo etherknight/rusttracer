@@ -6,3 +6,4 @@ Learning Rust by writing a Ray Tracer
 # Links
 
 * https://raytracing.github.io/ 
+* https://github.com/dps/rust-raytracer
