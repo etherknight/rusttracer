@@ -1,9 +1,9 @@
 
-use crate::vec3::{Point, Vec3};
+use crate::vector3d::{Point, Vector3D};
 
 pub struct Ray {
     pub origin: Point,
-    pub direction: Vec3
+    pub direction: Vector3D
 }
 
 impl Ray {
