@@ -2,31 +2,31 @@ use std::ops;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32
+    pub x: f64,
+    pub y: f64,
+    pub z: f64
 }
 
 pub type Colour = Vec3;
 pub type Point = Vec3;
 
 impl Vec3 {
-    pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x, y, z }
     }
 
-    pub fn length(&self) -> f32 {
+    pub fn length(&self) -> f64 {
         self.length_squared()
             .sqrt()
     }
 
-    pub fn length_squared(&self) -> f32 {
+    pub fn length_squared(&self) -> f64 {
         return (self.x * self.x) + 
                (self.y * self.y) + 
                (self.z * self.z);
     }
 
-    pub fn dot(self, vec: Vec3) -> f32 {
+    pub fn dot(self, vec: Vec3) -> f64 {
           self.x * vec.x 
         + self.y * vec.y
         + self.z * vec.z
@@ -80,13 +80,25 @@ impl ops::Sub<Vec3> for Vec3 {
     }
 }
 
-impl ops::Mul<f32> for Vec3 {
+impl ops::Mul<f64> for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, scale: f32) -> Self::Output {
+    fn mul(self, scale: f64) -> Self::Output {
         let x = self.x * scale;
         let y = self.y * scale;
         let z = self.z * scale;
+
+        Vec3 { x, y, z }        
+    }
+}
+
+impl ops::Mul<Vec3> for f64 {
+    type Output = Vec3;
+
+    fn mul(self, vec: Vec3) -> Self::Output {
+        let x = vec.x * self;
+        let y = vec.y * self;
+        let z = vec.z * self;
 
         Vec3 { x, y, z }        
     }
@@ -104,8 +116,8 @@ impl ops::Mul<Vec3> for Vec3 {
     }
 }
 
-impl ops::MulAssign<f32> for Vec3 {
-    fn mul_assign(&mut self, scale: f32) {
+impl ops::MulAssign<f64> for Vec3 {
+    fn mul_assign(&mut self, scale: f64) {
         *self = Self {
             x: self.x * scale,
             y: self.y * scale,
@@ -114,10 +126,10 @@ impl ops::MulAssign<f32> for Vec3 {
     }
 }
 
-impl ops::Div<f32> for Vec3 {
+impl ops::Div<f64> for Vec3 {
     type Output = Vec3;
 
-    fn div(self, rhs: f32) -> Self::Output {
+    fn div(self, rhs: f64) -> Self::Output {
         self * (1.0/rhs)
     }
 }

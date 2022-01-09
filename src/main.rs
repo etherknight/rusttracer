@@ -14,13 +14,13 @@ use ray::Ray;
 fn main() {
     // Image
     let aspect_ratio = 16.0 / 9.0;
-    let image_width  = 400;
-    let image_height = 400 / (aspect_ratio as i32);
+    let image_width:f64  = 400.0;
+    let image_height:f64 = 400.0 / aspect_ratio;
 
     // Camera
     let viewport_height = 2.0;
     let viewport_width = viewport_height * aspect_ratio;
-    let focal_length: f32 = 1.0;
+    let focal_length: f64 = 1.0;
 
     let origin = Point { x: 0.0, y: 0.0, z: 0.0 };
     let horizontal = Vec3 { x: viewport_width, y: 0.0, z: 0.0 };
@@ -42,10 +42,10 @@ fn main() {
     file.write(format!("{} {}\n255\n", image_width, image_height).as_bytes())
         .expect("Failed to initalise image dimensions");
 
-    for j in 0..image_height {
-        for i in 0..image_width {
-            let u: f32 = i as f32 / ((image_width - 1) as f32);
-            let v: f32 = j as f32 / ((image_height - 1) as f32);
+    for j in 0..image_height as i64 {
+        for i in 0..image_width as i64 {
+            let u: f64 = i as f64 / ((image_width - 1.0) as f64);
+            let v: f64 = j as f64 / ((image_height - 1.0) as f64);
 
             let direction = lower_left_corner + (horizontal * u) + (vertical * v) - origin;
             
@@ -66,15 +66,37 @@ fn write_colour(file: &mut File, pixel: Colour) {
 }
 
 fn ray_colour(ray: Ray) -> Colour {
+    let t = hit_sphere(Point::new(0.0,0.0,-1.0), 0.5, &ray);
+    if t > 0.0 {
+        //println!("HIT! t={}", t);
+        let n = unit_vector(ray.at(t) - Point::new(0.0,0.0,-1.0));
+        return 0.5 * Colour::new(n.x + 1.0,n.y + 1.0,n.z + 1.0)
+    }
     let unit_direction: Vec3 = unit_vector(ray.direction);
     let t = 0.5*(unit_direction.y + 1.0);
     let white = Colour { x: 1.0, y: 1.0, z: 1.0 };
     let blue = Colour { x:0.5, y: 0.7, z: 1.0 };
 
-    (white * (1.0-t))  + (blue * t)
+    ((1.0-t) * white)  + (t * blue)
 }
 
 fn unit_vector(vec: Vec3) -> Vec3 {
     let length = vec.length();
     vec / length
+}
+
+fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> f64 {
+    let oc = ray.origin - center;
+    let a = ray.direction.dot(ray.direction);
+    let b = 2.0 * oc.dot(ray.direction);
+    let c = oc.dot(oc) - (radius * radius);
+
+    let discriminant =  (b * b) - (4.0*a*c);
+    match discriminant < 0.0 {
+        true => -1.0,
+        false => {
+            let sqrt = f64::sqrt(discriminant);
+            (-b - sqrt) / (2.0 * a)
+        }
+    }
 }
