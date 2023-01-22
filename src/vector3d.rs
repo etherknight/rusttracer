@@ -15,12 +15,12 @@ impl Vector3D {
         Vector3D { x, y, z }
     }
 
-    pub fn length(&self) -> f64 {
+    pub fn length(self) -> f64 {
         self.length_squared()
             .sqrt()
     }
 
-    pub fn length_squared(&self) -> f64 {
+    pub fn length_squared(self) -> f64 {
         return (self.x * self.x) + 
                (self.y * self.y) + 
                (self.z * self.z);

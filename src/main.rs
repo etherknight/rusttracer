@@ -1,5 +1,7 @@
 pub mod vector3d;
 pub mod ray;
+pub mod hittable;
+pub mod sphere;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -10,6 +12,8 @@ use vector3d::Colour;
 use vector3d::Point;
 
 use ray::Ray;
+use hittable::HittableList;
+use sphere::Sphere;
 
 fn main() {
     // Image
@@ -26,6 +30,12 @@ fn main() {
     let horizontal = Vector3D { x: viewport_width, y: 0.0, z: 0.0 };
     let vertical = Vector3D { x: 0.0, y: viewport_height, z: 0.0 };
     let lower_left_corner = origin - horizontal/2.0 - vertical/2.0 - Vector3D { x: 0.0, y: 0.0, z: focal_length};
+    
+    // Scene
+    //let mut world = HittableList::new();
+    let mut world: Vec<Sphere> = Vec::new();
+    world.push( Sphere::new( Point::new(0.0,0.0,-1.0), 0.5) );
+    world.push( Sphere::new( Point::new(0.0,-100.5,-1.0), 100.0) );
 
     // Render
     let image_path = Path::new("image.ppm");

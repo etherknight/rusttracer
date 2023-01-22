@@ -1,37 +1,49 @@
-use crate::hittable::{Hittable, HitRecord};
+use crate::hittable::{HittableT, HitRecord};
 use crate::vector3d::Point;
+use crate::ray::Ray;
 
-
+#[derive(Debug, Clone, Copy)]
 pub struct Sphere {
     center: Point,
     radius: f64
 }
 
-impl Hittable for Sphere {
-    fn hit(self: HitRecord, ray:Ray, min: f64, max: f64, rec: &HitRecord) -> bool {
-        let oc = ray.origin - center;
+impl Sphere {
+    pub fn new(center: Point, radius: f64) -> Sphere {
+        Sphere {
+            center,
+            radius
+        }
+    }
+}
+
+impl HittableT for Sphere {
+    fn hit(&self, ray:Ray, min: f64, max: f64) -> Option<HitRecord> {
+        let oc = ray.origin - self.center;
         let a = ray.direction.length_squared();
         let half_b = oc.dot(ray.direction);    
-        let c = oc.dot(oc) - (radius * radius);
+        let c = oc.dot(oc) - (self.radius * self.radius);
 
         let discriminant =  (half_b * half_b) - (a*c);
-        if (discriminant < 0.0) {
-            return false;
+        if discriminant < 0.0 {
+            return None;
         }
         
         let sqrt = f64::sqrt(discriminant);
-        let root = (-half_b - sqrt) / a;
+        let mut root = (-half_b - sqrt) / a;
         if (root < min) || (max < root) {
             root = (-half_b + sqrt) / a;
             if (root < min) || (max < root){
-                return false;
+                return None;
             }
         }
-        rec.t = root;
-        rec.p = ray.at(root);
-        let outward_normal = (rec.p - center) / radius;
-        rec.set_face_normal(ray, outward_normal);
+        let rec = HitRecord::new(ray.at(root), 
+                                root, 
+                                  ray.direction, 
+                                self.center, 
+                                self.radius);
+
         
-        return true;
+        return Some(rec);
     }
 }
