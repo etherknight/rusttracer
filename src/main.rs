@@ -3,7 +3,7 @@
 use std::{f64, ops};
 use std::fs::File;
 use std::io::prelude::*;
-use std::ops::{Div, Mul};
+use std::ops::{Deref, Div, Mul};
 use std::path::Path;
 
 #[derive(Copy, Clone)]
@@ -190,7 +190,14 @@ fn main() {
                                     - viewport_v/2.0;
     let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    write_image_header(width, height);
+    // Reading a file returns a Result enum
+    // Result can be a file or an error
+    let output = match File::create("image.ppm") {
+        Ok(file) => file,
+        Err(error) => panic!("Problem opening the data file: {:?}", error),
+    };
+
+    write_image_header(&output, width, height);
 
     for h in 0..height as i32 {
         for w in 0..width as i32 {
@@ -201,24 +208,30 @@ fn main() {
             let ray: Ray = Ray::new(camera_center, ray_direction);
 
             let color: Color = ray_color(ray);
-            write_color(color);
+            write_color(&output, color);
         }
     }
 }
 
-fn hit_sphere(center: Point, radius: f64, ray: &Ray) -> bool {
-    let oc = center - ray.origin;
-    let a = ray.direction.dot(ray.direction);
-    let b = -2.0 * ray.direction.dot(oc);
-    let c = oc.dot(oc) - (radius * radius);
-    let discriminant = (b*b) - (4.0*a*c);
+fn hit_sphere(center: Point, radius: f64, ray: &Ray) -> f64 {
+    let origin_center = center - ray.origin;
+    let a = ray.direction.length_squared();
+    let h = ray.direction.dot(origin_center);
+    let c = origin_center.length_squared() - (radius * radius);
+    let discriminant = (h * h) - (a * c);
 
-    discriminant > 0.0
+    return if discriminant < 0.0 {
+        -1.0
+    } else {
+        (h - discriminant.sqrt()) / a
+    }
 }
 
 fn ray_color(ray: Ray) -> Color {
-    if hit_sphere(Point::new(0.0, 0.0, -1.0), 0.5, &ray) {
-        return Color::new(1.0, 0.0, 0.0);
+    let t = hit_sphere(Point::new(0.0, 0.0, -1.0), 0.5, &ray);
+    if t > 0.0 {
+        let normal = (ray.at(t) - Vec3::new(0.0, 0.0, -1.0)).unit_vector();
+        return 0.5 * Color::new(normal.x + 1.0, normal.y + 1.0, normal.z + 1.0);
     }
 
     let unit_direction = ray.direction.unit_vector();
@@ -226,14 +239,22 @@ fn ray_color(ray: Ray) -> Color {
     (1.0 - a)* Color::new(1.0, 1.0, 1.0)
         + a * Color::new(0.5, 0.7, 1.0)
 }
-fn write_image_header(width: f64, height: f64) {
-    print!("P3\n{} {}\n255\n", width as i32, height as i32);
+fn write_image_header(mut output: &File, width: f64, height: f64) {
+    let line = format!("P3\n{} {}\n255\n", width as i32, height as i32);
+    match output.write(line.as_bytes()) {
+        Err(error) => panic!("Problem opening the data file: {:?}", error),
+        _ => {}
+    };
 }
 
-fn write_color(color: Color) {
+fn write_color(mut output: &File, color: Color) {
     let ir = (255.999 * color.x) as i32;
     let ig = (255.999 * color.y) as i32;
     let ib = (255.999 * color.z) as i32;
 
-    print!("{} {} {}\n", ir, ig, ib);
+    let line = format!("{} {} {}\n", ir, ig, ib);
+    match output.write(line.as_bytes()) {
+        Err(error) => panic!("Problem opening the data file: {:?}", error),
+        _ => {}
+    };
 }
