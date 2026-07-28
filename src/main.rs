@@ -1,170 +1,27 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-use std::{f64, ops};
+mod color;
+mod hittable;
+mod ray;
+mod sphere;
+mod vec3;
+
+use color::write_color;
+use hittable::{HitRecord, Hittable};
+use ray::Ray;
+use sphere::Sphere;
 use std::fs::File;
-use std::io::prelude::*;
-use std::ops::{Deref, Div, Mul};
-use std::path::Path;
+use std::io::{BufWriter, Write};
+use vec3::{Color, Point, Vec3};
+use crate::hittable::HittableList;
 
-#[derive(Copy, Clone)]
-struct Vec3 {
-    x: f64,
-    y: f64,
-    z: f64
-}
-
-type Color = Vec3;
-type Point = Vec3;
-
-impl Vec3 {
-    fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { x, y, z }
-    }
-    fn length(&self) -> f64 {
-        self.length_squared().sqrt()
-    }
-    fn length_squared(&self) -> f64 {
-        (self.x * self.x) + (self.y * self.y) + (self.z * self.z)
+fn ray_color(ray: &Ray, world: &dyn Hittable) -> Color {
+    let mut rec = HitRecord::new();
+    if world.hit(ray, 0.0, f64::INFINITY, &mut rec) {
+        return 0.5 * Color::new(rec.normal.x + 1.0, rec.normal.y + 1.0, rec.normal.z + 1.0);
     }
 
-    fn dot(&self, rhs: Vec3) -> f64 {
-        (self.x * rhs.x)
-        + (self.y * rhs.y)
-        + (self.z * rhs.z)
-    }
-
-    fn cross(&self, rhs: Vec3) -> Vec3 {
-        Vec3::new(
-            self.y * rhs.z - self.z * rhs.y,
-            self.z * rhs.x - self.x * rhs.z,
-            self.x * rhs.y - self.y * rhs.x
-        )
-    }
-
-    fn unit_vector(&self) -> Vec3{
-        self / self.length()
-    }
-}
-
-impl ops::Neg for Vec3 {
-    type Output = Vec3;
-
-    fn neg(self) -> Self::Output {
-        Vec3::new(-self.x, -self.y, -self.z)
-    }
-}
-
-impl ops::Add<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn add(self, rhs: Vec3) -> Self::Output {
-        Vec3::new(
-            self.x + rhs.x,
-            self.y + rhs.y,
-            self.z + rhs.z
-        )
-    }
-}
-impl ops::AddAssign<Vec3> for Vec3 {
-    fn add_assign(&mut self, rhs: Vec3) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
-}
-
-impl ops::Sub<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn sub(self, rhs: Vec3) -> Self::Output {
-        Vec3::new(
-            self.x - rhs.x,
-            self.y - rhs.y,
-            self.z - rhs.z,
-        )
-    }
-}
-
-impl ops::Mul<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: Vec3) -> Self::Output {
-        Vec3::new(
-            self.x * rhs.x,
-            self.y * rhs.y,
-            self.z * rhs.z,
-        )
-    }
-}
-
-impl ops::Mul<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        Vec3::new(
-            self.x * rhs,
-            self.y * rhs,
-            self.z * rhs
-        )
-    }
-}
-impl ops::Mul<Vec3> for f64 {
-    type Output = Vec3;
-    fn mul(self, rhs: Vec3) -> Self::Output {
-        Vec3::new(
-            self * rhs.x,
-            self * rhs.y,
-            self * rhs.z
-        )
-    }
-}
-
-impl ops::MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, rhs: f64) {
-        self.x *= rhs;
-        self.y *= rhs;
-        self.z *= rhs;
-    }
-}
-
-impl ops::Div<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        self * (1.0/rhs)
-    }
-}
-impl ops::Div<f64> for &Vec3 {
-    type Output = Vec3;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        Vec3::new(
-            self.x / rhs,
-            self.y / rhs,
-            self.z / rhs
-        )
-    }
-}
-impl ops::DivAssign<f64> for Vec3{
-    fn div_assign(&mut self, rhs: f64) {
-        self.x /= rhs;
-        self.y /= rhs;
-        self.z /= rhs;
-    }
-}
-
-struct Ray {
-    origin: Point,
-    direction: Vec3
-}
-impl Ray {
-    fn new(origin: Point, direction: Vec3) -> Ray {
-        Ray { origin, direction }
-    }
-
-    fn at(&self, t: f64) -> Point {
-        self.origin + (t * self.direction)
-    }
+    let unit_direction = ray.direction.unit_vector();
+    let a = 0.5 * (unit_direction.y + 1.0);
+    (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
 }
 
 fn main() {
@@ -173,9 +30,16 @@ fn main() {
     let width: f64 = 400.00;
     let height: f64 = width / aspect_ratio;
 
+    // World
+    let mut world = HittableList::new(); 
+    world.add(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
+        
+
+    // Camera
     let focal_length = 1.0;
     let viewport_height = 2.0;
-    let viewport_width = viewport_height * f64::from(width/height);
+    let viewport_width = viewport_height * (width / height);
     let camera_center = Point::new(0.0, 0.0, 0.0);
 
     let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
@@ -184,77 +48,26 @@ fn main() {
     let pixel_delta_u = viewport_u / width;
     let pixel_delta_v = viewport_v / height;
 
-    let viewport_upper_left = camera_center
-                                    - Vec3::new(0.0, 0.0, focal_length)
-                                    - viewport_u/2.0
-                                    - viewport_v/2.0;
+    let viewport_upper_left =
+        camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
 
-    // Reading a file returns a Result enum
-    // Result can be a file or an error
-    let output = match File::create("image.ppm") {
-        Ok(file) => file,
-        Err(error) => panic!("Problem opening the data file: {:?}", error),
-    };
+    let file = File::create("image.ppm").expect("Failed to create data file");
+    let mut writer = BufWriter::new(file);
 
-    write_image_header(&output, width, height);
+    writeln!(writer, "P3\n{} {}\n255", width as i32, height as i32)
+        .expect("Failed to write PPM header");
 
     for h in 0..height as i32 {
         for w in 0..width as i32 {
-            let pixel_center = pixel00_loc
-                                        + (f64::from(w) * pixel_delta_u)
-                                        + (f64::from(h) * pixel_delta_v);
+            let pixel_center =
+                pixel00_loc + (f64::from(w) * pixel_delta_u) + (f64::from(h) * pixel_delta_v);
             let ray_direction = pixel_center - camera_center;
-            let ray: Ray = Ray::new(camera_center, ray_direction);
+            let ray = Ray::new(camera_center, ray_direction);
 
-            let color: Color = ray_color(ray);
-            write_color(&output, color);
+            let color = ray_color(&ray, &world);
+            write_color(&mut writer, color);
         }
     }
-}
-
-fn hit_sphere(center: Point, radius: f64, ray: &Ray) -> f64 {
-    let origin_center = center - ray.origin;
-    let a = ray.direction.length_squared();
-    let h = ray.direction.dot(origin_center);
-    let c = origin_center.length_squared() - (radius * radius);
-    let discriminant = (h * h) - (a * c);
-
-    return if discriminant < 0.0 {
-        -1.0
-    } else {
-        (h - discriminant.sqrt()) / a
-    }
-}
-
-fn ray_color(ray: Ray) -> Color {
-    let t = hit_sphere(Point::new(0.0, 0.0, -1.0), 0.5, &ray);
-    if t > 0.0 {
-        let normal = (ray.at(t) - Vec3::new(0.0, 0.0, -1.0)).unit_vector();
-        return 0.5 * Color::new(normal.x + 1.0, normal.y + 1.0, normal.z + 1.0);
-    }
-
-    let unit_direction = ray.direction.unit_vector();
-    let a = 0.5 * (unit_direction.y + 1.0);
-    (1.0 - a)* Color::new(1.0, 1.0, 1.0)
-        + a * Color::new(0.5, 0.7, 1.0)
-}
-fn write_image_header(mut output: &File, width: f64, height: f64) {
-    let line = format!("P3\n{} {}\n255\n", width as i32, height as i32);
-    match output.write(line.as_bytes()) {
-        Err(error) => panic!("Problem opening the data file: {:?}", error),
-        _ => {}
-    };
-}
-
-fn write_color(mut output: &File, color: Color) {
-    let ir = (255.999 * color.x) as i32;
-    let ig = (255.999 * color.y) as i32;
-    let ib = (255.999 * color.z) as i32;
-
-    let line = format!("{} {} {}\n", ir, ig, ib);
-    match output.write(line.as_bytes()) {
-        Err(error) => panic!("Problem opening the data file: {:?}", error),
-        _ => {}
-    };
+    writer.flush().expect("Failed to flush buffer");
 }
