@@ -9,6 +9,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: i32,
     pub samples_per_pixel: i32,
+    pub max_depth: i32,
     image_height: i32,
     center: Point,
     pixel00_loc: Point,
@@ -45,6 +46,7 @@ impl Camera {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            max_depth: 50,
             image_height,
             center: camera_center,
             pixel00_loc,
@@ -64,7 +66,7 @@ impl Camera {
                 let mut pixel_color = Color::new(0.0, 0.0, 0.0);
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(w, h, &mut rng);
-                    pixel_color += self.ray_color(&ray, world);
+                    pixel_color += self.ray_color(&ray, self.max_depth, world, &mut rng);
                 }
 
                 write_color(writer, pixel_color, self.samples_per_pixel);
@@ -84,18 +86,25 @@ impl Camera {
         Ray::new(self.center, ray_direction)
     }
 
-    fn ray_color(&self, ray: &Ray, world: &dyn Hittable) -> Color {
-        let mut rec = HitRecord::new();
-        if world.hit(ray, 0.0, f64::INFINITY, &mut rec) {
-            return 0.5 * Color::new(
-                rec.normal.x + 1.0, 
-                rec.normal.y + 1.0, 
-                rec.normal.z + 1.0
-            );
+    fn ray_color(&self, ray: &Ray, depth: i32, world: &dyn Hittable, rng: &mut impl Rng) -> Color {
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
         }
+        
+        //Object
+        let mut rec = HitRecord::new();
+        if world.hit(ray, 0.001, f64::INFINITY, &mut rec) {
+            // Lambertian reflection: bounce in random direction on the normal.
+            let direction = rec.normal + Vec3::random_unit_vector(rng);
+            let bounced_ray = Ray::new(rec.point, direction);
+            
+            return 0.5 
+                * self.ray_color(&bounced_ray, depth - 1, world, rng);             
+        }
+        // Sky / Background
         let unit_direction = ray.direction.unit_vector();
         let a = 0.5 * (unit_direction.y + 1.0);
-        (1.0 - a) * Color::new(1.0, 1.0, 1.0) 
-            + a * Color::new(0.5, 0.7, 1.0) 
+        (1.0 - a) * Color::new(1.0, 1.0, 1.0)
+            + a * Color::new(0.5, 0.7, 1.0)
     }
 }
