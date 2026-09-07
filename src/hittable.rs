@@ -1,10 +1,14 @@
 use crate::ray::Ray;
 use crate::vec3::{Point, Vec3};
+use crate::material::Material;
 
-#[derive(Clone,Copy)]
+use std::sync::Arc;
+
+#[derive(Clone)]
 pub struct HitRecord {
     pub point: Point,
     pub normal: Vec3,
+    pub mat: Option<Arc<dyn Material>>,
     pub t: f64,
     pub front_face: bool,
 }
@@ -14,6 +18,7 @@ impl HitRecord {
         HitRecord {
             point: Point::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 0.0, 0.0),
+            mat: None,
             t: 0.0,
             front_face: false,
         }
@@ -55,11 +60,12 @@ impl Hittable for HittableList {
         let mut temp_rec = HitRecord::new();
         let mut hit_anything = false;
         let mut closest_so_far = ray_tmax;
+        
         for object in &self.objects {
             if object.hit(ray, ray_tmin, closest_so_far, &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
-                *hit_record = temp_rec;
+                *hit_record = temp_rec.clone();
             }
         }
 

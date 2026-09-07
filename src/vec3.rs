@@ -77,6 +77,54 @@ impl Vec3 {
             -on_unit_sphere
         }
     }
+    
+    // Returns true if the vector is very close to zero in all dimensions.
+    pub fn near_zero(&self) -> bool {
+        const EPSILON: f64 = 1e-8; 
+        self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON
+    }
+    
+    pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+        v - 2.0 * v.dot(n) * n
+    }
+
+    /**
+    etai_over_etat = eta^i / eta^t
+    Where eta (Greek η ) is the refractive index of a material.
+    Ref: Snell's Law.
+    ### 1. The Greek Letter η ("Eta")
+
+    In physics and optics, the refractive index of a material is conventionally
+    represented by the Greek letter η (eta) (or sometimes n).
+
+    The refractive index measures how much light slows down inside that
+    material:
+
+    • Vacuum / Air: η ≈ 1.0
+    • Water: η ≈ 1.33
+    • Glass: η ≈ 1.5
+    • Diamond: η ≈ 2.4
+    ──────
+    ### 2. The Subscripts: i and t
+
+    • ηᵢ (etai): The refractive index of the medium the ray is coming from
+    (incident medium).
+    • ηₜ (etat): The refractive index of the medium the ray is entering
+    (transmitted medium).
+
+    Therefore, etai_over_etat is the ratio of the two refractive indices:
+
+       ηᵢ
+      ────
+       ηₜ
+    */
+    pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_thea = (-uv).dot(n).min(1.0);
+        let r_out_perp = etai_over_etat * (uv + cos_thea * n);
+        let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * n;
+
+        r_out_perp + r_out_parallel
+    }
 }
 
 impl ops::Neg for Vec3 {

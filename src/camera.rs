@@ -2,6 +2,7 @@ use crate::color::{write_color, Color};
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
 use crate::vec3::{Point, Vec3};
+use rand::rngs::ThreadRng;
 use rand::Rng;
 use std::io::Write;
 
@@ -86,7 +87,7 @@ impl Camera {
         Ray::new(self.center, ray_direction)
     }
 
-    fn ray_color(&self, ray: &Ray, depth: i32, world: &dyn Hittable, rng: &mut impl Rng) -> Color {
+    fn ray_color(&self, ray: &Ray, depth: i32, world: &dyn Hittable, rng: &mut ThreadRng) -> Color {
         if depth <= 0 {
             return Color::new(0.0, 0.0, 0.0);
         }
@@ -94,12 +95,16 @@ impl Camera {
         //Object
         let mut rec = HitRecord::new();
         if world.hit(ray, 0.001, f64::INFINITY, &mut rec) {
-            // Lambertian reflection: bounce in random direction on the normal.
-            let direction = rec.normal + Vec3::random_unit_vector(rng);
-            let bounced_ray = Ray::new(rec.point, direction);
-            
-            return 0.5 
-                * self.ray_color(&bounced_ray, depth - 1, world, rng);             
+            let mut scattered = Ray::new(Point::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+            let mut attenuation = Color::new(0.0, 0.0, 0.0);
+
+            if let Some(mat) = &rec.mat {
+                if mat.scatter(ray ,&rec, &mut attenuation, &mut scattered, rng){
+                    return attenuation * self.ray_color(&scattered, depth - 1, world, rng);
+                }
+            }
+
+            return Color::new(0.0, 0.0, 0.0);
         }
         // Sky / Background
         let unit_direction = ray.direction.unit_vector();

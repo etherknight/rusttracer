@@ -1,15 +1,24 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
 use crate::vec3::{Point, Vec3};
+use crate::material::Material;
+
+use std::sync::Arc;
 
 pub struct Sphere {
     pub center: Point,
     pub radius: f64,
+    pub mat: Arc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point, radius: f64) -> Sphere {
-        Sphere { center, radius }
+    pub fn new(center: Point, radius: f64, mat: Arc<dyn Material>) -> Sphere {
+        
+        Sphere { 
+            center, 
+            radius, 
+            mat
+        }
     }
 }
 
@@ -38,6 +47,7 @@ impl Hittable for Sphere {
         hit_record.point = ray.at(root);
         let outward_normal = (hit_record.point - self.center) / self.radius;
         hit_record.set_front_face_normal(ray, outward_normal);
+        hit_record.mat = Some(self.mat.clone());
 
         true
     }
@@ -45,10 +55,13 @@ impl Hittable for Sphere {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::Color;
+    use crate::material::Lambertian;
     use super::*;
     #[test]
     fn test_sphere_hit() {
-        let s = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5);
+        let material = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+        let s = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, material);
         let r = Ray::new(Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
         let mut h = HitRecord::new();
 
@@ -56,7 +69,8 @@ mod tests {
     }
 
     fn test_sphere_miss(){
-        let s = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5);
+        let material = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+        let s = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, material);
         let r = Ray::new(Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
         let mut h = HitRecord::new();
 
