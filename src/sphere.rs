@@ -68,6 +68,7 @@ mod tests {
         assert!(s.hit(&r, 0.001, f64::MAX, &mut h));
     }
 
+    #[test]
     fn test_sphere_miss(){
         let material = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
         let s = Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, material);
