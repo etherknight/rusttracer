@@ -37,7 +37,12 @@ fn main() {
     world.add(Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), -0.4, material_glass.clone())));
 
     // Camera
-    let camera = Camera::new(aspect_ratio, width, samples_per_pixel);
+    let v_field_of_view = 20.0;
+    let look_from = Vec3::new(-2.0, 2.0, 1.0);
+    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let v_up = Vec3::new(0.0, 1.0, 0.0);
+
+    let camera = Camera::new(aspect_ratio, width, samples_per_pixel, v_field_of_view, look_from, look_at, v_up);
 
     let file = File::create("./image.ppm")
                         .expect("Failed to create data file");

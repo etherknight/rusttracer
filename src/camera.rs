@@ -19,26 +19,41 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(aspect_ratio: f64, image_width: i32, samples_per_pixel: i32) -> Self {
+    pub fn new(
+        aspect_ratio: f64,
+        image_width: i32,
+        samples_per_pixel: i32,
+        vfov: f64,
+        lookfrom: Point,
+        lookat: Point,
+        vup: Vec3
+    ) -> Self {
         let mut image_height = (image_width as f64 / aspect_ratio) as i32;
         if image_height < 1{
             image_height = 1;
         }
 
-        let camera_center = Point::new(0.0, 0.0, 0.0);
+        let camera_center = lookfrom;
 
-        let focal_length = 1.0;
-        let viewport_height = 2.0;
+        let focal_length = (lookfrom - lookat).length();
+        let theta = vfov.to_radians();
+        let h = (theta / 2.0).tan();
+
+        let viewport_height = 2.0 * h * focal_length;
         let viewport_width = viewport_height * (image_width as f64 / image_height as f64);
 
-        let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
-        let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+        let w = (lookfrom - lookat).unit_vector();
+        let u = vup.cross(w).unit_vector();
+        let v = w.cross(u);
+
+        let viewport_u = viewport_width * u;
+        let viewport_v = viewport_height * -v;
 
         let pixel_delta_u = viewport_u / image_width as f64;
         let pixel_delta_v = viewport_v / image_height as f64;
 
         let viewport_upper_left = camera_center
-            - Vec3::new(0.0, 0.0, focal_length)
+            - (focal_length * w)
             - viewport_u / 2.0
             - viewport_v / 2.0;
         let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
